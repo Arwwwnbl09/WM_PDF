@@ -43,26 +43,26 @@ Contoh `config`:
 }
 ```
 
-| `outputQuality` | Pilihan | Resolusi dan kompresi |
-| --- | --- | --- |
-| `compact` | Ringan & jelas (bawaan) | 150 DPI, palet warna/Flate atau JPEG kualitas 70–75. |
-| `economy` | Hemat | 100 DPI, JPEG kualitas 70. |
-| `balanced` | Seimbang | 150 DPI, JPEG kualitas 80. |
-| `high` | Tinggi | 300 DPI, JPEG kualitas 85. |
+| `outputQuality` | Pilihan                 | Resolusi dan kompresi                                |
+| --------------- | ----------------------- | ---------------------------------------------------- |
+| `compact`       | Ringan & jelas (bawaan) | 150 DPI, palet warna/Flate atau JPEG kualitas 70–75. |
+| `economy`       | Hemat                   | 100 DPI, JPEG kualitas 70.                           |
+| `balanced`      | Seimbang                | 150 DPI, JPEG kualitas 80.                           |
+| `high`          | Tinggi                  | 300 DPI, JPEG kualitas 85.                           |
 
 Mode `compact` memilih palet 256 warna ketika perubahan warna masih dalam batas dan ukuran lebih kecil daripada JPEG. Halaman dengan foto atau warna kompleks dapat menggunakan JPEG. Resolusi tetap 150 DPI dan kualitas JPEG tidak diturunkan di bawah 70. Target sekitar 10 MiB dapat terlampaui untuk mempertahankan kualitas.
 
 Hasil berhasil mempunyai tipe `application/pdf` dan nama `<nama_asli>_secured.pdf`. Nama file dibersihkan sebelum dipakai. Pesan kegagalan dikirim sebagai JSON pada kolom `detail`.
 
-| Kode | Arti |
-| --- | --- |
-| 200 | PDF hasil tersedia. |
-| 413 | Ukuran unggahan melebihi batas. |
-| 415 | Format unggahan bukan PDF. |
-| 422 | PDF atau pengaturan tidak didukung. |
-| 499 | Pekerjaan dibatalkan. |
-| 503 | Server sedang memproses PDF lain atau masih menyelesaikan pembatalan. |
-| 500 | Pemrosesan atau pemeriksaan hasil gagal. |
+| Kode | Arti                                                                  |
+| ---- | --------------------------------------------------------------------- |
+| 200  | PDF hasil tersedia.                                                   |
+| 413  | Ukuran unggahan melebihi batas.                                       |
+| 415  | Format unggahan bukan PDF.                                            |
+| 422  | PDF atau pengaturan tidak didukung.                                   |
+| 499  | Pekerjaan dibatalkan.                                                 |
+| 503  | Server sedang memproses PDF lain atau masih menyelesaikan pembatalan. |
+| 500  | Pemrosesan atau pemeriksaan hasil gagal.                              |
 
 Batas bawaan: 50 MiB per unggahan, 200 halaman, dan 25 juta piksel per halaman. Teks watermark wajib berisi 1–256 karakter, ukuran huruf 8–200 pt, rotasi −180 sampai 180 derajat, kepekatan 0–1, jarak 0–200 mm, serta warna HEX enam digit. Kolom pengaturan tambahan ditolak. PDF dengan kata sandi tidak didukung.
 
@@ -93,6 +93,19 @@ Variabel lingkungan ditetapkan sebelum Uvicorn dimulai. `backend/.env.example` a
 Jalankan satu worker Uvicorn. Satu instance hanya mengerjakan satu PDF pada saat yang sama; permintaan tambahan mendapat 503. Pengelolaan progres dan pembatalan juga berada pada instance tersebut. Penambahan instance memerlukan pengelolaan pekerjaan dan status bersama.
 
 Sediakan RAM, ruang penyimpanan sementara, HTTPS, dan waktu tunggu reverse proxy yang sesuai untuk dokumen panjang. Panduan frontend dan pembuatan paket hosting tersedia pada [README proyek](../README.md).
+
+### Container Docker
+
+Dari folder proyek:
+
+```text
+docker build -t secure-pdf-backend ./backend
+docker run --rm -p 8000:8000 -e FRONTEND_ORIGINS=https://wm-pdf.vercel.app secure-pdf-backend
+```
+
+Container menyertakan Python 3.13, font Liberation/DejaVu, dan dependensi aplikasi yang mengikuti versi `requirements.lock.txt`. Aplikasi berjalan sebagai pengguna non-root dan memakai direktori sementara yang dapat ditulis. Port mengikuti variabel `PORT`, dengan nilai bawaan `8000`. Pemeriksaan kesehatan tersedia di `/health`.
+
+Untuk frontend Vercel, tetapkan `NEXT_PUBLIC_API_URL` ke alamat HTTPS layanan backend sebelum redeploy frontend. File [render.yaml](../render.yaml) menyediakan konfigurasi backend Render untuk uji coba; layanan tersebut tetap perlu dibuat melalui akun Render. Panduan penyambungan ada pada [README proyek](../README.md#frontend-vercel-dan-backend-terpisah).
 
 ## Tes
 

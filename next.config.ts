@@ -1,16 +1,47 @@
 import type { NextConfig } from "next";
 
-const backend = new URL(
-  process.env.PDF_API_URL?.trim() || "http://127.0.0.1:8000",
-);
-if (
-  !["http:", "https:"].includes(backend.protocol) ||
-  backend.username ||
-  backend.password ||
-  backend.search ||
-  backend.hash
-)
-  throw new Error("PDF_API_URL must be an HTTP(S) backend URL.");
+function apiBase(value: string, variable: string): URL {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`${variable} must be an absolute HTTP(S) backend URL.`);
+  }
+  if (
+    !["http:", "https:"].includes(url.protocol) ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  )
+    throw new Error(
+      `${variable} must be an HTTP(S) backend URL without credentials, query, or fragment.`,
+    );
+  return url;
+}
+
+const onVercel = process.env.VERCEL === "1";
+const publicApi = process.env.NEXT_PUBLIC_API_URL?.trim();
+const directBackend = publicApi
+  ? apiBase(publicApi, "NEXT_PUBLIC_API_URL")
+  : undefined;
+
+if (onVercel) {
+  if (!directBackend)
+    throw new Error(
+      "Set NEXT_PUBLIC_API_URL to your deployed Python backend HTTPS URL in Vercel, then redeploy. Vercel does not start the backend/ FastAPI service.",
+    );
+  const host = directBackend.hostname;
+  if (
+    directBackend.protocol !== "https:" ||
+    /^(localhost|.+\.localhost|.+\.local|\[::1\]|\[::\])$|^(0|127|10|192\.168|169\.254|172\.(1[6-9]|2\d|3[01]))\./i.test(
+      host,
+    )
+  )
+    throw new Error(
+      "NEXT_PUBLIC_API_URL on Vercel must use the public HTTPS address of your Python backend, not localhost or a private network address.",
+    );
+}
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["172.25.32.1", "127.0.0.1"],
@@ -21,6 +52,13 @@ const nextConfig: NextConfig = {
     proxyClientMaxBodySize: "51mb",
   },
   async rewrites() {
+    // Vercel's external proxy times out after 120 seconds. Large PDFs go
+    // directly from the browser to the separately deployed Python backend.
+    if (onVercel) return [];
+    const backend = apiBase(
+      process.env.PDF_API_URL?.trim() || "http://127.0.0.1:8000",
+      "PDF_API_URL",
+    );
     return [
       {
         source: "/api/pdf/:path*",

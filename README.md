@@ -17,12 +17,12 @@ Perubahan file atau pengaturan memerlukan proses ulang. **Atur ulang** mengembal
 
 ## Kualitas PDF
 
-| Pilihan | Resolusi | Penggunaan |
-| --- | --- | --- |
-| Ringan & jelas (bawaan) | 150 DPI | Teks dan tabel tetap cukup jelas dengan ukuran file lebih kecil. |
-| Hemat | 100 DPI | Ukuran lebih kecil; teks kecil dan detail gambar dapat berkurang. |
-| Seimbang | 150 DPI | Kualitas gambar dan ukuran file untuk penggunaan umum. |
-| Tinggi | 300 DPI | Detail lebih baik untuk dokumen teknis atau cetak; file lebih besar. |
+| Pilihan                 | Resolusi | Penggunaan                                                           |
+| ----------------------- | -------- | -------------------------------------------------------------------- |
+| Ringan & jelas (bawaan) | 150 DPI  | Teks dan tabel tetap cukup jelas dengan ukuran file lebih kecil.     |
+| Hemat                   | 100 DPI  | Ukuran lebih kecil; teks kecil dan detail gambar dapat berkurang.    |
+| Seimbang                | 150 DPI  | Kualitas gambar dan ukuran file untuk penggunaan umum.               |
+| Tinggi                  | 300 DPI  | Detail lebih baik untuk dokumen teknis atau cetak; file lebih besar. |
 
 Ringan & jelas memakai kompresi palet warna atau JPEG sesuai isi halaman. Target internal sekitar 10 MiB tidak menjadi batas ukuran: aplikasi mempertahankan resolusi dan kualitas minimum, sehingga hasil dapat melebihi target. Jumlah halaman, gambar, dan warna memengaruhi ukuran akhir.
 
@@ -61,7 +61,7 @@ Pada Linux, gunakan `.venv/bin/python`. Pastikan server mempunyai font Liberatio
 
 Untuk akses pengembangan melalui IP, sesuaikan `allowedDevOrigins` pada `next.config.ts` dengan IP server. Alamat IP tidak memakai protokol atau port pada pengaturan tersebut. Restart frontend setelah konfigurasi berubah.
 
-`NEXT_PUBLIC_API_URL` bersifat opsional untuk koneksi browser langsung ke backend. Jika dipakai, alamatnya harus dapat dijangkau perangkat pengguna, dan `FRONTEND_ORIGINS` backend harus mencantumkan alamat frontend. Nilai `NEXT_PUBLIC_API_URL` ditetapkan sebelum build. Kosongkan variabel ini untuk memakai proxy bawaan.
+`NEXT_PUBLIC_API_URL` dipakai untuk koneksi browser langsung ke backend dan wajib diisi saat hosting frontend di Vercel. Alamatnya harus dapat dijangkau perangkat pengguna, dan `FRONTEND_ORIGINS` backend harus mencantumkan alamat frontend. Nilai `NEXT_PUBLIC_API_URL` ditetapkan sebelum build; perubahan memerlukan redeploy. Pada server lokal atau server kantor yang menjalankan Next.js sendiri, kosongkan variabel ini untuk memakai proxy bawaan.
 
 Backend membaca variabel lingkungan saat dimulai. File `backend/.env.example` hanya contoh dan tidak dimuat otomatis. Daftar `FRONTEND_ORIGINS` dipisahkan koma, memakai alamat lengkap tanpa path atau wildcard.
 
@@ -91,6 +91,25 @@ Tes memeriksa pengolahan PDF, kualitas gambar, validasi, unggahan, pembatalan, p
 ## Persiapan hosting
 
 Aplikasi memerlukan layanan **Node.js untuk Next.js** dan **Python untuk FastAPI**, beserta ruang penyimpanan sementara dan RAM untuk pengolahan PDF. Paket ini dijalankan sebagai aplikasi server; unggahan HTML statis saja tidak menjalankan pemrosesan PDF.
+
+### Frontend Vercel dan backend terpisah
+
+Deployment Next.js di Vercel tidak menjalankan folder `backend/`. Backend Python perlu berjalan sebagai layanan terpisah dengan alamat HTTPS. `127.0.0.1:8000` dan alamat jaringan kantor tidak dapat dipakai untuk menghubungkan Vercel ke komputer lokal. Konfigurasi build sekarang memeriksa `NEXT_PUBLIC_API_URL` pada Vercel agar pengaturan tersebut tidak terlewat.
+
+Salah satu cara memasang backend adalah melalui [Render](https://render.com/docs/docker):
+
+1. Di Render, pilih **New → Blueprint**, lalu hubungkan repo `Arwwwnbl09/WM_PDF`. File `render.yaml` menyiapkan layanan Docker backend, font, satu instance, dan pemeriksaan `/health`.
+2. Tinjau paket layanan sebelum membuatnya. Blueprint memakai paket gratis untuk uji coba file kecil. Layanan gratis dapat berhenti saat tidak digunakan dan RAM-nya terbatas; gunakan sumber daya yang sesuai untuk dokumen kantor banyak halaman. Informasi paket tersedia di [panduan Render](https://render.com/docs/free).
+3. Tunggu backend aktif. Buka `https://alamat-backend/health` dan pastikan responsnya `{"status":"ok"}`.
+4. Di Vercel, buka proyek **wm-pdf → Settings → Environment Variables**. Isi `NEXT_PUBLIC_API_URL` dengan `https://alamat-backend`, tanpa tambahan `/api/pdf`, pada lingkungan **Production**.
+5. Di backend, isi `FRONTEND_ORIGINS=https://wm-pdf.vercel.app`. Blueprint sudah memakai alamat ini. Tambahkan domain lain yang dipakai, dipisahkan koma; jangan menggunakan wildcard.
+6. Redeploy frontend Vercel agar alamat backend masuk ke build baru. Uji satu PDF kecil, lalu dokumen dengan ukuran dan jumlah halaman yang biasa dipakai di kantor. Uji juga pembatalan dan proses ulang.
+
+Dengan konfigurasi ini, unggahan, progres, pembatalan, dan hasil PDF dikirim langsung antara browser dan backend. Proxy Vercel tidak dipakai untuk pemrosesan PDF karena [batas waktu proxy eksternal 120 detik](https://vercel.com/docs/limits#proxied-request-timeout). Menempatkan pemroses PDF sebagai Vercel Function juga memerlukan perubahan arsitektur karena [batas badan permintaan dan respons 4,5 MB](https://vercel.com/docs/functions/limitations#request-body-size).
+
+Backend juga bisa dijalankan di Railway atau server kantor melalui [Dockerfile backend](backend/Dockerfile); sesuaikan alamat HTTPS dan origin frontend. Jalankan satu instance dan satu worker Uvicorn agar progres serta pembatalan menuju proses yang sama.
+
+### Server sendiri dan paket sumber
 
 Buat paket sumber dari folder proyek:
 

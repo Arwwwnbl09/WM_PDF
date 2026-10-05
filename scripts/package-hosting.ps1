@@ -71,12 +71,15 @@ try {
         'eslint.config.mjs',
         '.env.example',
         'README.md',
+        'render.yaml',
         'scripts/prepare-pdf-assets.mjs',
         'scripts/package-hosting.ps1',
         'backend/requirements.txt',
         'backend/requirements.lock.txt',
         'backend/.env.example',
-        'backend/README.md'
+        'backend/README.md',
+        'backend/Dockerfile',
+        'backend/.dockerignore'
     )
     foreach ($file in $files) { Copy-PackageFile $file }
     Copy-PackageDirectory 'src' -Extensions @('.ts', '.tsx', '.css', '.json', '.svg')

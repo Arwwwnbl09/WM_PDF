@@ -141,7 +141,9 @@ def test_negative_content_length_and_error_cors() -> None:
             headers={"Content-Length": "-1", "Origin": "http://localhost:3000"},
         )
         assert response.status_code == 400
-        assert response.json() == {"detail": "Content-Length tidak valid."}
+        assert response.json() == {
+            "detail": "Permintaan tidak valid. Silakan pilih PDF kembali."
+        }
         assert (
             response.headers["access-control-allow-origin"] == "http://localhost:3000"
         )

@@ -1,0 +1,15 @@
+# Optional backend deployment. The free plan is for small-file trials;
+# select sufficient RAM in Render before using large office documents.
+services:
+  - type: web
+    name: secure-pdf-watermark-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    numInstances: 1
+    healthCheckPath: /health
+    envVars:
+      - key: FRONTEND_ORIGINS
+        value: https://wm-pdf.vercel.app

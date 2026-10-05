@@ -9,6 +9,18 @@ export interface ProcessedPdf {
 }
 const fallback = "Gagal memproses PDF. Silakan coba lagi.";
 
+function nonJsonProcessingError(status: number, body: string): string {
+  if (body.includes("DNS_HOSTNAME_RESOLVED_PRIVATE"))
+    return "Server pemrosesan PDF belum tersambung. Hubungi pengelola aplikasi.";
+  if (status === 404)
+    return "Layanan pemrosesan PDF tidak tersedia. Hubungi pengelola aplikasi.";
+  if (status === 502)
+    return "Server pemrosesan PDF tidak dapat dihubungi. Coba lagi beberapa saat lagi.";
+  if (status === 504)
+    return "Server pemrosesan PDF terlalu lama merespons. Coba lagi.";
+  return fallback;
+}
+
 export async function cancelPdf(id: string): Promise<void> {
   // This request must survive aborting the upload and leaving the page.
   const response = await fetch(apiUrl(`/api/pdf/cancel/${id}`), {
@@ -105,8 +117,10 @@ export async function processPdf(
     if (response.status === 413)
       throw new Error("Ukuran PDF melebihi batas yang diizinkan.");
     let message = fallback;
+    let responseText = "";
     try {
-      const payload: unknown = await response.json();
+      responseText = await response.text();
+      const payload: unknown = JSON.parse(responseText);
       if (
         typeof payload === "object" &&
         payload !== null &&
@@ -115,8 +129,9 @@ export async function processPdf(
         payload.detail.trim()
       )
         message = payload.detail;
-    } catch {
-      /* Non-JSON errors use the user-facing fallback. */
+    } catch (error) {
+      if (signal?.aborted) throw error;
+      message = nonJsonProcessingError(response.status, responseText);
     }
     if (/password|kata sandi/i.test(message))
       message = "PDF dilindungi kata sandi dan belum dapat diproses.";
