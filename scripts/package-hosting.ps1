@@ -63,29 +63,32 @@ New-Item -ItemType Directory -Path $stagingPath -Force | Out-Null
 
 try {
     $files = @(
-        'package.json',
-        'package-lock.json',
-        'next.config.ts',
-        'tsconfig.json',
-        'postcss.config.mjs',
-        'eslint.config.mjs',
-        '.env.example',
+        'frontend/package.json',
+        'frontend/package-lock.json',
+        'frontend/next.config.ts',
+        'frontend/tsconfig.json',
+        'frontend/postcss.config.mjs',
+        'frontend/eslint.config.mjs',
+        'frontend/.env.example',
+        'frontend/vercel.json',
+        'frontend/README.md',
         'README.md',
         'render.yaml',
-        'scripts/prepare-pdf-assets.mjs',
+        'frontend/scripts/prepare-pdf-assets.mjs',
         'scripts/package-hosting.ps1',
         'backend/requirements.txt',
         'backend/requirements.lock.txt',
         'backend/.env.example',
         'backend/README.md',
         'backend/Dockerfile',
-        'backend/.dockerignore'
+        'backend/.dockerignore',
+        'backend/vercel.json'
     )
     foreach ($file in $files) { Copy-PackageFile $file }
-    Copy-PackageDirectory 'src' -Extensions @('.ts', '.tsx', '.css', '.json', '.svg')
+    Copy-PackageDirectory 'frontend/src' -Extensions @('.ts', '.tsx', '.css', '.json', '.svg')
     Copy-PackageDirectory 'backend/app' -Extensions @('.py') -ExcludedFolders @('__pycache__')
-    if (Test-Path -LiteralPath (Join-Path $projectRoot 'public')) {
-        Copy-PackageDirectory 'public' -ExcludedFolders @('pdfjs')
+    if (Test-Path -LiteralPath (Join-Path $projectRoot 'frontend/public')) {
+        Copy-PackageDirectory 'frontend/public' -ExcludedFolders @('pdfjs')
     }
 
     Compress-Archive -Path (Join-Path $stagingPath '*') -DestinationPath $temporaryArchive -CompressionLevel Optimal

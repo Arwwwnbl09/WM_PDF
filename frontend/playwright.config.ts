@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   testDir: "./tests",
@@ -15,6 +16,7 @@ export default defineConfig({
     ? undefined
     : {
         command: "npm run start -- --port 3101",
+        cwd: fileURLToPath(new URL(".", import.meta.url)),
         url: "http://localhost:3101",
         reuseExistingServer: !process.env.CI,
         timeout: 60000,

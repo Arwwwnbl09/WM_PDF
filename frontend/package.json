@@ -13,7 +13,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "package:hosting": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-hosting.ps1",
+    "package:hosting": "powershell -NoProfile -ExecutionPolicy Bypass -File ../scripts/package-hosting.ps1",
     "format": "prettier --write src README.md package.json tsconfig.json postcss.config.mjs eslint.config.mjs"
   },
   "keywords": [],

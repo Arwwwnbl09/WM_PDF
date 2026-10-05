@@ -3,6 +3,7 @@ import { pdfFixture } from "./pdf-fixture";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { statSync } from "node:fs";
+import { backendPython, verifyDownloadScript } from "./backend-tools";
 
 test("real API compresses all four qualities and downloads raster pages at the selected resolution", async ({
   page,
@@ -32,12 +33,7 @@ test("real API compresses all four qualities and downloads raster pages at the s
     const download = await pending;
     const path = resolve("test-results", `quality-${quality}.pdf`);
     await download.saveAs(path);
-    execFileSync(resolve("backend/.venv/Scripts/python.exe"), [
-      resolve("backend/scripts/verify_download.py"),
-      path,
-      "2",
-      String(dpi),
-    ]);
+    execFileSync(backendPython, [verifyDownloadScript, path, "2", String(dpi)]);
     sizes.push(statSync(path).size);
     if (quality === "balanced") {
       await page.screenshot({

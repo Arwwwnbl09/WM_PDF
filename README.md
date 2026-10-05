@@ -2,6 +2,24 @@
 
 Aplikasi untuk memberi watermark pada seluruh halaman PDF. Dokumen dipilih melalui tombol unggah atau seret dan lepas, lalu diperiksa di pratinjau sebelum diproses.
 
+## Struktur proyek
+
+```text
+frontend/   Next.js, antarmuka, pratinjau, dan tes browser
+backend/    FastAPI, pemrosesan PDF, dan tes Python
+scripts/    Pembuatan paket sumber hosting
+render.yaml Konfigurasi deployment backend Docker
+```
+
+Frontend dan backend dipasang sebagai layanan terpisah. Saat mengimpor repo ke Vercel, pilih **Import single project** dan tetapkan **Root Directory `frontend`** untuk proyek Next.js. Folder aplikasi Python adalah **`backend`**. Pengaturan folder membantu memilih aplikasi yang benar; error runtime backend tetap perlu diperiksa melalui log hosting.
+
+| Aplikasi | Root Directory | Framework Preset |
+| -------- | -------------- | ---------------- |
+| Frontend | `frontend`     | `Next.js`        |
+| Backend  | `backend`      | `FastAPI`        |
+
+Masing-masing folder memiliki `vercel.json` untuk menetapkan framework. Panduan backend Docker untuk dokumen besar tersedia pada bagian hosting.
+
 ## Penggunaan
 
 1. Pilih satu file PDF.
@@ -34,17 +52,18 @@ Batas unggahan adalah 50 MiB dan 200 halaman. PDF yang dilindungi kata sandi tid
 
 Gunakan Node.js 24 dan Python 3.11 atau lebih baru. Pengujian proyek memakai Python 3.13. Jalankan frontend dan backend pada terminal terpisah.
 
-Frontend, dari folder proyek:
+Frontend, dari folder proyek pada terminal pertama:
 
 ```powershell
+Set-Location frontend
 npm ci
 Copy-Item .env.example .env.local
 npm run dev
 ```
 
-Perintah penyalinan konfigurasi hanya diperlukan pada pemasangan baru. Buka `http://localhost:3000`. Aset PDF.js disiapkan otomatis saat pemasangan dependensi dan build, sehingga pratinjau tidak memerlukan CDN.
+Perintah penyalinan konfigurasi hanya diperlukan pada pemasangan baru. Konfigurasi frontend berada di `frontend/.env.local`. Buka `http://localhost:3000`. Aset PDF.js disiapkan otomatis saat pemasangan dependensi dan build, sehingga pratinjau tidak memerlukan CDN.
 
-Backend, dari folder proyek:
+Backend, dari folder proyek pada terminal kedua:
 
 ```powershell
 python -m venv backend/.venv
@@ -59,7 +78,7 @@ Pada Linux, gunakan `.venv/bin/python`. Pastikan server mempunyai font Liberatio
 
 `PDF_API_URL` berisi alamat backend yang dapat dijangkau oleh server Next.js. Nilai lokalnya adalah `http://127.0.0.1:8000`. Browser meminta `/api/pdf/...` pada alamat frontend, lalu Next.js meneruskan permintaan ke backend. Dengan cara ini, pengguna dari jaringan kantor tidak perlu mengakses port backend.
 
-Untuk akses pengembangan melalui IP, sesuaikan `allowedDevOrigins` pada `next.config.ts` dengan IP server. Alamat IP tidak memakai protokol atau port pada pengaturan tersebut. Restart frontend setelah konfigurasi berubah.
+Untuk akses pengembangan melalui IP, sesuaikan `allowedDevOrigins` pada `frontend/next.config.ts` dengan IP server. Alamat IP tidak memakai protokol atau port pada pengaturan tersebut. Restart frontend setelah konfigurasi berubah.
 
 `NEXT_PUBLIC_API_URL` dipakai untuk koneksi browser langsung ke backend dan wajib diisi saat hosting frontend di Vercel. Alamatnya harus dapat dijangkau perangkat pengguna, dan `FRONTEND_ORIGINS` backend harus mencantumkan alamat frontend. Nilai `NEXT_PUBLIC_API_URL` ditetapkan sebelum build; perubahan memerlukan redeploy. Pada server lokal atau server kantor yang menjalankan Next.js sendiri, kosongkan variabel ini untuk memakai proxy bawaan.
 
@@ -67,7 +86,7 @@ Backend membaca variabel lingkungan saat dimulai. File `backend/.env.example` ha
 
 ## Pemeriksaan
 
-Jalankan dari folder proyek:
+Jalankan dari folder `frontend`:
 
 ```powershell
 npm run lint
@@ -101,9 +120,10 @@ Salah satu cara memasang backend adalah melalui [Render](https://render.com/docs
 1. Di Render, pilih **New → Blueprint**, lalu hubungkan repo `Arwwwnbl09/WM_PDF`. File `render.yaml` menyiapkan layanan Docker backend, font, satu instance, dan pemeriksaan `/health`.
 2. Tinjau paket layanan sebelum membuatnya. Blueprint memakai paket gratis untuk uji coba file kecil. Layanan gratis dapat berhenti saat tidak digunakan dan RAM-nya terbatas; gunakan sumber daya yang sesuai untuk dokumen kantor banyak halaman. Informasi paket tersedia di [panduan Render](https://render.com/docs/free).
 3. Tunggu backend aktif. Buka `https://alamat-backend/health` dan pastikan responsnya `{"status":"ok"}`.
-4. Di Vercel, buka proyek **wm-pdf → Settings → Environment Variables**. Isi `NEXT_PUBLIC_API_URL` dengan `https://alamat-backend`, tanpa tambahan `/api/pdf`, pada lingkungan **Production**.
-5. Di backend, isi `FRONTEND_ORIGINS=https://wm-pdf.vercel.app`. Blueprint sudah memakai alamat ini. Tambahkan domain lain yang dipakai, dipisahkan koma; jangan menggunakan wildcard.
-6. Redeploy frontend Vercel agar alamat backend masuk ke build baru. Uji satu PDF kecil, lalu dokumen dengan ukuran dan jumlah halaman yang biasa dipakai di kantor. Uji juga pembatalan dan proses ulang.
+4. Di Vercel, buat atau pilih proyek frontend. Pada **Settings → Build and Deployment**, isi **Root Directory `frontend`** dan **Framework Preset `Next.js`**. Pengaturan install dan build terdapat di `frontend/vercel.json`.
+5. Pada **Settings → Environment Variables**, isi `NEXT_PUBLIC_API_URL` dengan `https://alamat-backend`, tanpa tambahan `/api/pdf`, pada lingkungan **Production**.
+6. Di backend, isi `FRONTEND_ORIGINS=https://wm-pdf.vercel.app`. Blueprint sudah memakai alamat ini. Sesuaikan nilai tersebut jika domain frontend berubah. Tambahkan domain lain yang dipakai, dipisahkan koma; jangan menggunakan wildcard.
+7. Redeploy frontend Vercel agar alamat backend masuk ke build baru. Uji satu PDF kecil, lalu dokumen dengan ukuran dan jumlah halaman yang biasa dipakai di kantor. Uji juga pembatalan dan proses ulang.
 
 Dengan konfigurasi ini, unggahan, progres, pembatalan, dan hasil PDF dikirim langsung antara browser dan backend. Proxy Vercel tidak dipakai untuk pemrosesan PDF karena [batas waktu proxy eksternal 120 detik](https://vercel.com/docs/limits#proxied-request-timeout). Menempatkan pemroses PDF sebagai Vercel Function juga memerlukan perubahan arsitektur karena [batas badan permintaan dan respons 4,5 MB](https://vercel.com/docs/functions/limitations#request-body-size).
 
@@ -114,12 +134,12 @@ Backend juga bisa dijalankan di Railway atau server kantor melalui [Dockerfile b
 Buat paket sumber dari folder proyek:
 
 ```powershell
-npm run package:hosting
+npm --prefix frontend run package:hosting
 ```
 
-Hasilnya adalah `output/hosting/Secure-PDF-Watermark.zip`. Paket hanya memuat sumber aplikasi, konfigurasi, daftar dependensi, contoh variabel lingkungan, dan panduan. File `.env.local`, dependensi lokal, cache, hasil build, tes, dan dokumen pengujian tidak dimasukkan. Folder tes tetap tersedia pada proyek lokal. Aset `public/pdfjs` dibuat ulang saat `npm ci` atau `npm run build`.
+Hasilnya adalah `output/hosting/Secure-PDF-Watermark.zip`, dengan folder `frontend` dan `backend` terpisah. Paket hanya memuat sumber aplikasi, konfigurasi, daftar dependensi, contoh variabel lingkungan, dan panduan. File `.env.local`, dependensi lokal, cache, hasil build, tes, dan dokumen pengujian tidak dimasukkan. Folder tes tetap tersedia pada proyek lokal. Aset `frontend/public/pdfjs` dibuat ulang saat `npm ci` atau `npm run build` dari folder `frontend`.
 
-Pada server, ekstrak paket dan pasang dependensi frontend dengan `npm ci`. Tetapkan `PDF_API_URL` ke alamat backend sebelum `npm run build`, lalu jalankan `npm start`. Jangan menggunakan `npm run dev` untuk layanan kantor.
+Pada server, ekstrak paket dan masuk ke folder `frontend`. Pasang dependensi dengan `npm ci`, tetapkan `PDF_API_URL` ke alamat backend sebelum `npm run build`, lalu jalankan `npm start`. Jangan menggunakan `npm run dev` untuk layanan kantor.
 
 Pasang dependensi backend dari `backend/requirements.txt`, sediakan font, lalu jalankan dari folder `backend`:
 

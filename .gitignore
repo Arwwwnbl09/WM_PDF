@@ -6,7 +6,7 @@ next-env.d.ts
 .env*
 !**/.env.example
 *.log
-public/pdfjs/
+frontend/public/pdfjs/
 playwright-report/
 test-results/
 test-results-offline/

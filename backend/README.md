@@ -85,6 +85,10 @@ Input, hasil, dan progres disimpan pada direktori sementara. Direktori dibersihk
 
 ## Konfigurasi server
 
+Folder aplikasi Python adalah `backend`. Jika mengimpor backend sebagai proyek Vercel terpisah, pilih **Root Directory `backend`** dan **Framework Preset `FastAPI`**. Pengaturan framework tersedia di `backend/vercel.json`. Entrypoint aplikasi adalah `app/main.py`, dengan objek ASGI `app`. Pengaturan frontend ada di folder `frontend` pada proyek terpisah.
+
+Pemilihan folder tidak menggantikan pemeriksaan runtime hosting. Jika `/health` menghasilkan 500, periksa log startup atau import Python dari deployment tersebut.
+
 Frontend secara bawaan memakai proxy Next.js melalui `PDF_API_URL`. Backend dapat tetap berada di `127.0.0.1:8000` jika keduanya berjalan pada server yang sama.
 
 Untuk koneksi browser langsung ke backend, tetapkan `FRONTEND_ORIGINS` ke origin frontend yang diizinkan, misalnya `https://pdf.kantor.example`. Beberapa origin dipisahkan koma. Origin harus memakai HTTP atau HTTPS tanpa path, wildcard, atau kredensial. Nilai bawaan mengizinkan `http://localhost:3000` dan `http://127.0.0.1:3000`.

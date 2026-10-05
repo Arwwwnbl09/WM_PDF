@@ -1,9 +1,7 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Project layout
 
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- `frontend/` is the Next.js application. Run npm commands from this directory and read `frontend/AGENTS.md` before changing frontend code.
+- The installed Next.js guides are in `frontend/node_modules/next/dist/docs/`.
+- `backend/` is the FastAPI application. Run Python commands from this directory with `app.main:app` as the application module.
+- `scripts/package-hosting.ps1` creates the combined source package from the repository root.
+- Keep the frontend and backend as independently deployable applications. Frontend Vercel projects use Root Directory `frontend`; backend deployments use `backend`.

@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { pdfFixture } from "./pdf-fixture";
+import { backendPython, verifyDownloadScript } from "./backend-tools";
 
 const positionLabels: Record<string, string> = {
   "top-left": "Atas kiri",
@@ -49,11 +50,9 @@ async function processAndDownload(page: Page, filename: string) {
 }
 function verify(path: string, pages: number) {
   return JSON.parse(
-    execFileSync(
-      resolve("backend/.venv/Scripts/python.exe"),
-      [resolve("backend/scripts/verify_download.py"), path, String(pages)],
-      { encoding: "utf8" },
-    ),
+    execFileSync(backendPython, [verifyDownloadScript, path, String(pages)], {
+      encoding: "utf8",
+    }),
   ) as { pages: number; bounds: ([number, number, number, number] | null)[] };
 }
 
@@ -365,7 +364,7 @@ test("backend offline gives readable network error", async ({ page }) => {
 test("password PDF is rejected in preview without any request", async ({
   page,
 }) => {
-  const buffer = execFileSync(resolve("backend/.venv/Scripts/python.exe"), [
+  const buffer = execFileSync(backendPython, [
     "-c",
     "import pymupdf,sys; d=pymupdf.open(); d.new_page(); sys.stdout.buffer.write(d.tobytes(encryption=pymupdf.PDF_ENCRYPT_AES_256,owner_pw='owner',user_pw='secret')); d.close()",
   ]);
