@@ -45,6 +45,15 @@ def create_app(settings: ProcessingSettings | None = None) -> FastAPI:
     )
     application.include_router(router)
 
+    @application.get("/", tags=["Health"])
+    def root() -> dict[str, str]:
+        return {
+            "service": "Secure PDF Watermark",
+            "status": "ok",
+            "health": "/health",
+            "docs": "/docs",
+        }
+
     @application.get("/health", tags=["Health"])
     def health() -> dict[str, str]:
         return {"status": "ok"}

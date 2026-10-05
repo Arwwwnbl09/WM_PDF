@@ -17,6 +17,7 @@ Gunakan Python 3.11 atau lebih baru. Pada Linux, jalankan Python dari `.venv/bin
 
 `requirements.txt` berisi dependensi aplikasi. `requirements-dev.txt` menambahkan pytest, HTTPX, dan Ruff untuk pengembangan. `requirements.lock.txt` mencatat versi lingkungan pengujian lengkap.
 
+- Alamat utama backend: `GET /` menampilkan nama layanan, status, serta alamat pemeriksaan dan dokumentasi API.
 - Pemeriksaan layanan: `GET /health` mengembalikan `{"status":"ok"}`.
 - Dokumentasi interaktif: `/docs`.
 - Skema API: `/openapi.json`.
