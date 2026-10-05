@@ -85,6 +85,8 @@ Input, hasil, dan progres disimpan pada direktori sementara. Direktori dibersihk
 
 ## Konfigurasi server
 
+Untuk deployment gabungan Vercel Services, gunakan `vercel.json` pada root repo, **Root Directory `./`**, dan **Framework Preset `Services`**. Konfigurasi menetapkan entrypoint backend `app.main:app`; `/api/...`, `/health`, dan dokumentasi API diarahkan ke FastAPI. Frontend berada pada domain yang sama dan tidak memerlukan `NEXT_PUBLIC_API_URL`. Cara ini tetap mengikuti batas Vercel Functions, termasuk unggahan dan respons 4,5 MB; progres/pembatalan belum menggunakan status bersama antar-instance. Lihat [panduan Services](../README.md#frontend-dan-backend-dalam-vercel-services).
+
 Folder aplikasi Python adalah `backend`. Jika mengimpor backend sebagai proyek Vercel terpisah, pilih **Root Directory `backend`** dan **Framework Preset `FastAPI`**. Pengaturan framework tersedia di `backend/vercel.json`. Entrypoint aplikasi adalah `app/main.py`, dengan objek ASGI `app`. Pengaturan frontend ada di folder `frontend` pada proyek terpisah.
 
 Pemilihan folder tidak menggantikan pemeriksaan runtime hosting. Jika `/health` menghasilkan 500, periksa log startup atau import Python dari deployment tersebut.

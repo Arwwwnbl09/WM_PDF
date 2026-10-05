@@ -73,6 +73,7 @@ try {
         'frontend/vercel.json',
         'frontend/README.md',
         'README.md',
+        'vercel.json',
         'render.yaml',
         'frontend/scripts/prepare-pdf-assets.mjs',
         'scripts/package-hosting.ps1',

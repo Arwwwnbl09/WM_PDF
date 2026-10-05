@@ -8,17 +8,20 @@ Aplikasi untuk memberi watermark pada seluruh halaman PDF. Dokumen dipilih melal
 frontend/   Next.js, antarmuka, pratinjau, dan tes browser
 backend/    FastAPI, pemrosesan PDF, dan tes Python
 scripts/    Pembuatan paket sumber hosting
+vercel.json Konfigurasi frontend dan backend dalam satu proyek Services
 render.yaml Konfigurasi deployment backend Docker
 ```
 
-Frontend dan backend dipasang sebagai layanan terpisah. Saat mengimpor repo ke Vercel, pilih **Import single project** dan tetapkan **Root Directory `frontend`** untuk proyek Next.js. Folder aplikasi Python adalah **`backend`**. Pengaturan folder membantu memilih aplikasi yang benar; error runtime backend tetap perlu diperiksa melalui log hosting.
+Frontend dan backend mempunyai folder aplikasi masing-masing. Konfigurasi `vercel.json` pada root repo menjalankan keduanya dalam satu proyek [Vercel Services](https://vercel.com/docs/services), dengan **Root Directory `./`** dan **Framework Preset `Services`**. Pilihan ini cocok untuk pemeriksaan deployment dan PDF kecil, dengan batas platform yang dijelaskan pada bagian hosting.
+
+Untuk memasang aplikasi sebagai proyek terpisah, gunakan pengaturan berikut:
 
 | Aplikasi | Root Directory | Framework Preset |
 | -------- | -------------- | ---------------- |
 | Frontend | `frontend`     | `Next.js`        |
 | Backend  | `backend`      | `FastAPI`        |
 
-Masing-masing folder memiliki `vercel.json` untuk menetapkan framework. Panduan backend Docker untuk dokumen besar tersedia pada bagian hosting.
+Masing-masing folder juga memiliki `vercel.json` untuk deployment terpisah. Panduan backend Docker untuk dokumen besar tersedia pada bagian hosting.
 
 ## Penggunaan
 
@@ -80,7 +83,7 @@ Pada Linux, gunakan `.venv/bin/python`. Pastikan server mempunyai font Liberatio
 
 Untuk akses pengembangan melalui IP, sesuaikan `allowedDevOrigins` pada `frontend/next.config.ts` dengan IP server. Alamat IP tidak memakai protokol atau port pada pengaturan tersebut. Restart frontend setelah konfigurasi berubah.
 
-`NEXT_PUBLIC_API_URL` dipakai untuk koneksi browser langsung ke backend dan wajib diisi saat hosting frontend di Vercel. Alamatnya harus dapat dijangkau perangkat pengguna, dan `FRONTEND_ORIGINS` backend harus mencantumkan alamat frontend. Nilai `NEXT_PUBLIC_API_URL` ditetapkan sebelum build; perubahan memerlukan redeploy. Pada server lokal atau server kantor yang menjalankan Next.js sendiri, kosongkan variabel ini untuk memakai proxy bawaan.
+`NEXT_PUBLIC_API_URL` dipakai untuk koneksi browser langsung ke backend dan wajib diisi saat memasang frontend Vercel dengan backend eksternal. Alamatnya harus dapat dijangkau perangkat pengguna, dan `FRONTEND_ORIGINS` backend harus mencantumkan alamat frontend. Nilai `NEXT_PUBLIC_API_URL` ditetapkan sebelum build; perubahan memerlukan redeploy. Kosongkan variabel ini untuk Vercel Services agar browser memakai `/api/pdf/...` pada domain yang sama. Pada server lokal atau server kantor yang menjalankan Next.js sendiri, nilai kosong memakai proxy bawaan.
 
 Backend membaca variabel lingkungan saat dimulai. File `backend/.env.example` hanya contoh dan tidak dimuat otomatis. Daftar `FRONTEND_ORIGINS` dipisahkan koma, memakai alamat lengkap tanpa path atau wildcard.
 
@@ -113,7 +116,7 @@ Aplikasi memerlukan layanan **Node.js untuk Next.js** dan **Python untuk FastAPI
 
 ### Frontend Vercel dan backend terpisah
 
-Deployment Next.js di Vercel tidak menjalankan folder `backend/`. Backend Python perlu berjalan sebagai layanan terpisah dengan alamat HTTPS. `127.0.0.1:8000` dan alamat jaringan kantor tidak dapat dipakai untuk menghubungkan Vercel ke komputer lokal. Konfigurasi build sekarang memeriksa `NEXT_PUBLIC_API_URL` pada Vercel agar pengaturan tersebut tidak terlewat.
+Deployment yang memakai Root Directory `frontend` hanya menjalankan Next.js. Backend Python perlu berjalan sebagai layanan terpisah dengan alamat HTTPS. `127.0.0.1:8000` dan alamat jaringan kantor tidak dapat dipakai untuk menghubungkan Vercel ke komputer lokal. Konfigurasi build menolak alamat HTTP atau alamat jaringan privat pada `NEXT_PUBLIC_API_URL` di Vercel.
 
 Salah satu cara memasang backend adalah melalui [Render](https://render.com/docs/docker):
 
@@ -128,6 +131,15 @@ Salah satu cara memasang backend adalah melalui [Render](https://render.com/docs
 Dengan konfigurasi ini, unggahan, progres, pembatalan, dan hasil PDF dikirim langsung antara browser dan backend. Proxy Vercel tidak dipakai untuk pemrosesan PDF karena [batas waktu proxy eksternal 120 detik](https://vercel.com/docs/limits#proxied-request-timeout). Menempatkan pemroses PDF sebagai Vercel Function juga memerlukan perubahan arsitektur karena [batas badan permintaan dan respons 4,5 MB](https://vercel.com/docs/functions/limitations#request-body-size).
 
 Backend juga bisa dijalankan di Railway atau server kantor melalui [Dockerfile backend](backend/Dockerfile); sesuaikan alamat HTTPS dan origin frontend. Jalankan satu instance dan satu worker Uvicorn agar progres serta pembatalan menuju proses yang sama.
+
+### Frontend dan backend dalam Vercel Services
+
+1. Impor repo sebagai satu proyek dengan **Root Directory `./`** dan **Framework Preset `Services`**. Hapus override build atau output lama pada dashboard; perintah masing-masing aplikasi sudah ditetapkan dalam `vercel.json` root.
+2. Hapus `NEXT_PUBLIC_API_URL` dari lingkungan deployment tersebut untuk memakai backend dalam Services. `PDF_API_URL` tidak diperlukan pada Vercel; variabel ini dipakai oleh proxy lokal.
+3. Redeploy. `/` membuka antarmuka Next.js; `/health` memeriksa FastAPI; `/docs`, `/docs/oauth2-redirect`, `/redoc`, dan `/openapi.json` diarahkan ke backend. Seluruh `/api/...`, termasuk pemrosesan, progres, dan pembatalan, juga menuju FastAPI dengan path asli.
+4. Pastikan `/health` menghasilkan `{"status":"ok"}`, lalu uji PDF kecil. Jika muncul `FUNCTION_INVOCATION_FAILED`, periksa Runtime Logs backend; konfigurasi routing tidak mengatasi kegagalan startup Python.
+
+[Services tetap menggunakan Vercel Functions](https://vercel.com/docs/services/pricing). Batas [unggahan dan respons 4,5 MB](https://vercel.com/docs/functions/limitations#request-body-size) berlaku pada pemrosesan PDF saat ini, termasuk hasil yang membesar setelah rasterisasi. Progres dan pembatalan disimpan per instance; penskalaan otomatis dapat mengirim permintaan ke instance berbeda. Untuk pemakaian kantor dengan PDF 6 MB, hasil sekitar 10 MB, atau banyak halaman, gunakan backend terpisah yang dijelaskan di atas. Dukungan penuh melalui Vercel membutuhkan penyimpanan file dan status pekerjaan bersama serta alur pemrosesan yang sesuai batas waktu Function.
 
 ### Server sendiri dan paket sumber
 

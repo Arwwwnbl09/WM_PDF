@@ -26,11 +26,7 @@ const directBackend = publicApi
   ? apiBase(publicApi, "NEXT_PUBLIC_API_URL")
   : undefined;
 
-if (onVercel) {
-  if (!directBackend)
-    throw new Error(
-      "Set NEXT_PUBLIC_API_URL to your deployed Python backend HTTPS URL in Vercel, then redeploy. Vercel does not start the backend/ FastAPI service.",
-    );
+if (onVercel && directBackend) {
   const host = directBackend.hostname;
   if (
     directBackend.protocol !== "https:" ||
@@ -52,8 +48,8 @@ const nextConfig: NextConfig = {
     proxyClientMaxBodySize: "51mb",
   },
   async rewrites() {
-    // Vercel's external proxy times out after 120 seconds. Large PDFs go
-    // directly from the browser to the separately deployed Python backend.
+    // Services routes /api/pdf at the deployment root. Standalone frontends
+    // use NEXT_PUBLIC_API_URL to call an external backend directly.
     if (onVercel) return [];
     const backend = apiBase(
       process.env.PDF_API_URL?.trim() || "http://127.0.0.1:8000",

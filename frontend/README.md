@@ -18,6 +18,10 @@ Salin contoh konfigurasi hanya pada pemasangan baru agar konfigurasi lokal yang 
 
 ## Deploy frontend ke Vercel
 
+Repo menyediakan konfigurasi gabungan [Vercel Services](https://vercel.com/docs/services) pada `../vercel.json`. Untuk cara ini, pilih **Root Directory `./`** dan **Framework Preset `Services`**, lalu hapus `NEXT_PUBLIC_API_URL` agar permintaan API memakai domain yang sama. `/health` menguji backend. Batas unggahan/hasil 4,5 MB dan status proses per instance membuat cara ini terbatas untuk PDF kecil; baca [panduan hosting proyek](../README.md#frontend-dan-backend-dalam-vercel-services).
+
+Jika frontend dipasang sendiri dan backend berada di layanan eksternal, gunakan:
+
 - Root Directory: `frontend`
 - Framework Preset: `Next.js`
 - Install Command: `npm ci`
