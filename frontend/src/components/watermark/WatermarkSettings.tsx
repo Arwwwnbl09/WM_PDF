@@ -14,6 +14,7 @@ import {
 interface Props {
   config: WatermarkConfig;
   onChange: (config: WatermarkConfig) => void;
+  onQualityChange: (quality: OutputQuality) => void;
   hasFile: boolean;
   onProcess: () => void;
   canProcess: boolean;
@@ -22,10 +23,15 @@ interface Props {
   onReset: () => void;
   result: ReactNode;
   onDraftEdit: () => void;
+  onDraftValidityChange?: (valid: boolean) => void;
+  locked?: boolean;
+  filename?: string;
+  filenameField?: ReactNode;
 }
 export function WatermarkSettings({
   config,
   onChange,
+  onQualityChange,
   hasFile,
   onProcess,
   canProcess,
@@ -34,14 +40,20 @@ export function WatermarkSettings({
   onReset,
   result,
   onDraftEdit,
+  onDraftValidityChange,
+  locked = false,
+  filename,
+  filenameField,
 }: Props) {
   const [invalidDrafts, setInvalidDrafts] = useState<string[]>([]);
   function draftValidity(key: string, valid: boolean) {
     if (!valid) onDraftEdit();
-    setInvalidDrafts((previous) =>
-      valid
-        ? previous.filter((item) => item !== key)
-        : [...previous.filter((item) => item !== key), key],
+    const next = valid
+      ? invalidDrafts.filter((item) => item !== key)
+      : [...invalidDrafts.filter((item) => item !== key), key];
+    setInvalidDrafts(next);
+    onDraftValidityChange?.(
+      !next.some((item) => item === "fontSize" || config.type === "repeated"),
     );
   }
   function update<K extends keyof WatermarkConfig>(
@@ -59,9 +71,18 @@ export function WatermarkSettings({
         <div>
           <h2 id="settings-title">Pengaturan watermark</h2>
           <p>Atur teks, posisi, dan warna watermark.</p>
+          {filename && (
+            <p className="settings-filename" title={filename}>
+              {filename}
+            </p>
+          )}
         </div>
       </div>
-      <div className="settings-body">
+      <fieldset
+        className="settings-body"
+        disabled={locked}
+        aria-label="Pengaturan file terpilih"
+      >
         <div>
           <label className="field-label" htmlFor="watermark-text">
             Teks watermark
@@ -228,7 +249,7 @@ export function WatermarkSettings({
           </div>
           <p className="field-hint">Jarak antarwatermark pada pola berulang.</p>
         </div>
-      </div>
+      </fieldset>
       <div className="settings-footer">
         <div className="output-quality">
           <label className="field-label" htmlFor="output-quality">
@@ -236,10 +257,11 @@ export function WatermarkSettings({
           </label>
           <select
             id="output-quality"
+            disabled={isProcessing}
             value={config.outputQuality}
             aria-describedby="output-quality-help"
             onChange={(event) =>
-              update("outputQuality", event.target.value as OutputQuality)
+              onQualityChange(event.target.value as OutputQuality)
             }
           >
             {Object.entries(outputQualities).map(([value, option]) => (
@@ -249,9 +271,11 @@ export function WatermarkSettings({
             ))}
           </select>
           <p id="output-quality-help">
-            {outputQualities[config.outputQuality].description}
+            {outputQualities[config.outputQuality].description} Berlaku untuk
+            semua PDF dalam daftar.
           </p>
         </div>
+        {filenameField}
         <button
           type="button"
           className="process-button"

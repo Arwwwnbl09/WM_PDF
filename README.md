@@ -25,16 +25,22 @@ Masing-masing folder juga memiliki `vercel.json` untuk deployment terpisah. Pand
 
 ## Penggunaan
 
-1. Pilih satu file PDF.
-2. Atur teks, huruf, posisi, rotasi, warna, kepekatan, dan pola watermark.
-3. Pilih kualitas PDF hasil, lalu tekan **Proses PDF**.
-4. Tunggu proses selesai. Unduhan dimulai otomatis setelah PDF hasil diterima.
+1. Pilih satu atau beberapa PDF. **Tambah PDF** menambahkan file tanpa menghapus daftar yang sudah ada.
+2. Atur teks, huruf, posisi, rotasi, warna, kepekatan, dan pola watermark untuk setiap file; pilih nama file untuk melihat pratinjaunya. **Kualitas PDF** berlaku untuk seluruh daftar, termasuk file baru dan salinan. Mengganti kualitas setelah proses selesai memerlukan proses ulang seluruh hasil.
+3. Tekan **Proses PDF** untuk file terpilih atau **Proses semua** untuk memproses seluruh file yang belum selesai.
+4. Setiap hasil diunduh otomatis setelah selesai, baik melalui **Proses PDF**, **Proses semua**, maupun **Proses sisa**. Jika browser meminta izin untuk mengunduh beberapa file, pilih **Izinkan**. Gunakan **Simpan PDF** pada setiap file jika ingin menyimpan ulang atau memilih lokasi melalui dialog browser yang mendukungnya.
+
+Beberapa PDF diproses bergantian. Jika satu file gagal, file berikutnya tetap diproses; **Proses sisa** mencoba kembali file yang belum selesai. Pembatalan menghentikan antrean dan tetap menyimpan hasil yang sudah selesai di halaman. Mengubah pengaturan suatu file menghapus hasil lamanya tanpa menghapus hasil file lain. Menutup atau memuat ulang halaman menghapus daftar dan hasil yang belum disimpan.
 
 Selama proses, aplikasi menampilkan persentase dan label `processed`. Persentase dihitung dari halaman yang selesai. Angka dapat bertahan di 0% saat unggahan dan 99% saat hasil disiapkan. Tombol **Batalkan** menghentikan pekerjaan setelah halaman yang sedang dikerjakan selesai. Jika langsung memproses ulang, aplikasi menunggu pembatalan tersebut sebelum mengirim pekerjaan baru.
 
-Nama hasil mengikuti nama dokumen dengan tambahan `_secured.pdf`. Agar browser menanyakan nama dan lokasi penyimpanan, aktifkan pengaturan **Tanyakan lokasi penyimpanan setiap file sebelum mendownload** pada Chrome atau Edge. Dialog penyimpanan otomatis mengikuti pengaturan browser. Tombol **Simpan ulang** tersedia setelah proses selesai.
+Nama hasil mengikuti nama dokumen dengan tambahan `_secured.pdf`. Ubah kolom **Nama file hasil** sebelum proses jika ingin memakai nama lain. Kolom ini tersedia untuk setiap PDF, termasuk salinan. Nama juga bisa diubah setelah proses selesai tanpa memproses ulang; akhiran `.pdf` ditambahkan otomatis.
+
+Agar browser menanyakan nama dan lokasi penyimpanan, aktifkan pengaturan **Tanyakan lokasi penyimpanan setiap file sebelum mendownload** pada Chrome atau Edge. Dialog penyimpanan otomatis mengikuti pengaturan browser. Tombol **Simpan ulang** tersedia setelah proses selesai.
 
 Perubahan file atau pengaturan memerlukan proses ulang. **Atur ulang** mengembalikan pengaturan awal.
+
+Untuk memakai satu PDF dengan beberapa teks watermark, tekan **Buat salinan** pada file terpilih atau **Salin** di daftar PDF. Isi teks watermark salinan, lalu jalankan **Proses semua**. Salinan mengikuti pengaturan tampilan file sumber dan memiliki hasil terpisah dengan tambahan nama `_salinan_1`, `_salinan_2`, dan seterusnya.
 
 ## Kualitas PDF
 
@@ -49,7 +55,7 @@ Ringan & jelas memakai kompresi palet warna atau JPEG sesuai isi halaman. Target
 
 Setiap halaman hasil berupa gambar yang sudah memuat watermark. Teks tidak dapat dipilih atau dicari, dan formulir serta tautan interaktif tidak dipertahankan. PDF berbasis teks dapat menjadi lebih besar setelah proses ini. Pratinjau menampilkan dokumen asli dan posisi watermark; kualitas kompresi perlu diperiksa pada PDF hasil.
 
-Batas unggahan adalah 50 MiB dan 200 halaman. PDF yang dilindungi kata sandi tidak didukung. Server juga membatasi ukuran raster setiap halaman.
+Batas unggahan untuk setiap PDF adalah 50 MiB dan 200 halaman. PDF yang dilindungi kata sandi tidak didukung. Server juga membatasi ukuran raster setiap halaman.
 
 ## Menjalankan secara lokal
 

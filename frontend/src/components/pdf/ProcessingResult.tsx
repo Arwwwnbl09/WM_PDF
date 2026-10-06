@@ -4,11 +4,17 @@ import { PdfDownload } from "./PdfDownload";
 export function ProcessingResult({
   state,
   onCancel,
+  detail,
+  filename,
+  canSave = true,
 }: {
   state: ProcessingState;
   onCancel: () => void;
+  detail?: string;
+  filename?: string;
+  canSave?: boolean;
 }) {
-  if (state.status === "idle") return null;
+  if (state.status === "idle" || state.status === "queued") return null;
   if (state.status === "error")
     return (
       <div className="processing-result result-error" role="alert">
@@ -42,10 +48,18 @@ export function ProcessingResult({
           <span>{state.percentage}%</span>
         </div>
         <div className="progress-caption">processed</div>
+        {detail && <p className="batch-progress-detail">{detail}</p>}
         <button type="button" className="button-subtle" onClick={onCancel}>
           Batalkan
         </button>
       </div>
     );
-  return <PdfDownload key={state.result.url} {...state.result} />;
+  return (
+    <PdfDownload
+      key={state.result.url}
+      {...state.result}
+      filename={filename ?? state.result.filename}
+      disabled={!canSave}
+    />
+  );
 }

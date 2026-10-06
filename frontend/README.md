@@ -2,6 +2,20 @@
 
 Aplikasi Next.js untuk unggah PDF, pratinjau watermark, pengaturan kualitas, progres, dan unduhan hasil. Server pemrosesan PDF berada di folder `../backend`.
 
+## Beberapa PDF sekaligus
+
+Pilih beberapa PDF pada dialog unggahan atau tarik file-file tersebut ke area unggahan. Tombol **Tambah PDF** menambahkan file tanpa menghapus daftar sebelumnya; **Ganti semua** mengganti daftar.
+
+Untuk membuat beberapa hasil dari satu PDF, unggah sekali lalu tekan **Buat salinan** pada file terpilih atau **Salin** di daftar. Salinan memakai PDF sumber yang sama, mengikuti pengaturan tampilannya, dan memiliki kolom teks watermark kosong untuk diisi. Setiap salinan diproses sendiri dengan nama hasil seperti `dokumen_secured_salinan_1.pdf`. Membuat salinan tidak menghapus hasil yang sudah selesai.
+
+Setiap PDF memiliki teks dan pengaturan tampilan watermark sendiri. Isi teks pada daftar file, lalu pilih nama file untuk mengatur posisi, warna, dan huruf sambil melihat pratinjau. **Proses semua** memproses file bergantian menggunakan pengaturan masing-masing dan kualitas yang sama untuk seluruh daftar. Setiap hasil diunduh otomatis sebagai PDF terpisah setelah selesai, termasuk pada **Proses sisa**. Jika browser meminta izin unduhan beberapa file, pilih **Izinkan**. Tombol **Simpan PDF** pada setiap file tetap tersedia untuk menyimpan ulang. Dialog simpan memungkinkan penggantian nama dan pemilihan folder pada browser yang mendukungnya.
+
+Jika satu file gagal, file berikutnya tetap diproses. **Proses sisa** mencoba kembali file yang belum selesai. Pembatalan menghentikan antrean tanpa membuang hasil yang sudah selesai. Pengaturan dikunci selama pemrosesan beberapa file; perubahan setelah selesai menghapus hasil lama untuk file yang diubah. Pemrosesan satu PDF tetap memulai unduhan secara otomatis seperti sebelumnya.
+
+Kolom **Nama file hasil** tersedia sebelum proses untuk satu PDF dan pada setiap file di daftar. Nama dapat diubah lagi setelah PDF selesai diproses tanpa memproses ulang. Akhiran `.pdf` ditambahkan otomatis. Nama dengan spasi dan huruf Unicode dipertahankan; karakter yang tidak dapat digunakan dalam nama file ditolak. Nama dikunci selama pemrosesan.
+
+**Kualitas PDF** menggunakan satu pilihan untuk seluruh daftar. File yang ditambahkan dan salinan mengikuti kualitas tersebut. Mengubah kualitas membuang hasil lama dari daftar agar semua file diproses ulang dengan pilihan baru. Teks, nama hasil, dan pengaturan tampilan watermark masing-masing file tetap tersimpan.
+
 ## Menjalankan secara lokal
 
 Dari folder `frontend`:

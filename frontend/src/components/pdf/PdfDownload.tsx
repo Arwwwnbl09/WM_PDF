@@ -17,17 +17,23 @@ export function PdfDownload({
   blob,
   url,
   filename,
+  label = "Simpan ulang",
+  accessibleLabel,
+  disabled = false,
 }: {
   blob: Blob;
   url: string;
   filename: string;
+  label?: string;
+  accessibleLabel?: string;
+  disabled?: boolean;
 }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const busy = useRef(false);
 
   async function save() {
-    if (busy.current) return;
+    if (busy.current || disabled) return;
     busy.current = true;
     setSaving(true);
     setError("");
@@ -68,11 +74,12 @@ export function PdfDownload({
       <button
         type="button"
         className="button-subtle download-button"
-        disabled={saving}
+        disabled={saving || disabled}
         aria-busy={saving}
+        aria-label={accessibleLabel}
         onClick={() => void save()}
       >
-        {saving ? "Menyimpan PDF..." : "Simpan ulang"}
+        {saving ? "Menyimpan PDF..." : label}
       </button>
       {error && (
         <p role="alert" className="save-error">

@@ -12,7 +12,7 @@ async function upload(page: Page) {
   await expect(processButton(page)).toBeEnabled();
 }
 
-test("drag/drop, multi-file rejection and keyboard accessibility", async ({
+test("drag/drop, multiple file selection and keyboard accessibility", async ({
   page,
 }) => {
   await page.goto("/");
@@ -52,20 +52,31 @@ test("drag/drop, multi-file rejection and keyboard accessibility", async ({
     "aria-valuetext",
     "41%",
   );
-  const multiple = await page.evaluateHandle(() => {
-    const data = new DataTransfer();
-    for (const name of ["first.pdf", "second.pdf"])
-      data.items.add(new File(["%PDF-"], name, { type: "application/pdf" }));
-    return data;
-  });
+  const multiple = await page.evaluateHandle(
+    (bytes) => {
+      const data = new DataTransfer();
+      for (const name of ["first.pdf", "second.pdf"])
+        data.items.add(
+          new File([Uint8Array.from(bytes)], name, { type: "application/pdf" }),
+        );
+      return data;
+    },
+    Array.from(pdfFixture(1)),
+  );
   await page
     .locator(".upload-zone")
     .dispatchEvent("drop", { dataTransfer: multiple });
-  await expect(page.locator(".error-text[role=alert]")).toContainText(
-    "Pilih satu file PDF",
-  );
-  await expect(processButton(page)).toBeDisabled();
-  await expect(page.locator("canvas")).toHaveCount(0);
+  await expect(page.locator(".queue-item")).toHaveCount(3);
+  await expect(page.locator(".error-text[role=alert]")).toHaveCount(0);
+  await expect(processButton(page)).toBeEnabled();
+  const selectFirst = page.getByRole("button", {
+    name: "Atur 2: first.pdf",
+    exact: true,
+  });
+  await selectFirst.focus();
+  await page.keyboard.press("Enter");
+  await expect(selectFirst).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("Halaman 1 / 1", { exact: true })).toBeVisible();
   await transfer.dispose();
   await multiple.dispose();
 });

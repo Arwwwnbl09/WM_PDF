@@ -15,11 +15,13 @@ const PdfDocumentPreview = dynamic(() => import("./PdfDocumentPreview"), {
 export function PdfPreview({
   config,
   file,
+  filename,
   revision,
   onValidated,
 }: {
   config: WatermarkConfig;
   file: File | null;
+  filename?: string;
   revision: number;
   onValidated: (file: File | null) => void;
 }) {
@@ -41,7 +43,9 @@ export function PdfPreview({
       <div className="preview-toolbar">
         <span className="preview-file">
           <Icon name="file" size={15} />
-          <span title={file?.name}>{file?.name ?? "Belum ada PDF"}</span>
+          <span title={filename ?? file?.name}>
+            {filename ?? file?.name ?? "Belum ada PDF"}
+          </span>
         </span>
       </div>
       {file ? (

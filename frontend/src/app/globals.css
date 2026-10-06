@@ -950,6 +950,161 @@ input[type="color"]::-webkit-color-swatch {
   }
 }
 
+.pdf-queue {
+  margin-bottom: 20px;
+}
+.queue-heading {
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.queue-heading > div {
+  min-width: 0;
+  flex: 1;
+}
+.queue-heading h2 {
+  margin: 0 0 7px;
+  font-size: 14px;
+}
+.queue-heading p,
+.queue-note {
+  margin: 0;
+  font-size: 11px;
+  color: #697c86;
+  line-height: 1.6;
+}
+.queue-heading .process-button {
+  width: auto;
+  flex-shrink: 0;
+  padding: 12px;
+}
+.queue-list {
+  list-style: none;
+  padding: 12px;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+.queue-item {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.queue-item.is-selected {
+  border-color: #86bdb1;
+  background: #f6fbf9;
+}
+.queue-file-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.queue-select {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  color: #394955;
+}
+.queue-number {
+  background: #eaf4f0;
+  color: var(--accent);
+  border-radius: 6px;
+  min-width: 28px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+.queue-file-info {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.queue-file-info strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+.queue-file-info small {
+  color: #697c86;
+  font-size: 10px;
+}
+.queue-status {
+  font-size: 10px;
+  color: #697c86;
+  text-align: right;
+}
+.queue-copy {
+  margin-left: 0;
+  flex-shrink: 0;
+}
+.pdf-filename-field {
+  margin-top: 14px;
+}
+.settings-footer > .pdf-filename-field {
+  margin: 0 0 18px;
+}
+.pdf-filename-field .field-hint {
+  text-align: left;
+  line-height: 1.5;
+}
+.status-success {
+  color: var(--accent);
+}
+.status-error {
+  color: #972b20;
+}
+.queue-note {
+  padding: 0 18px 14px;
+}
+.queue-item .error-text {
+  overflow-wrap: anywhere;
+}
+.queue-item .download-button {
+  margin-left: 0;
+}
+.settings-filename {
+  margin-top: 8px !important;
+  overflow-wrap: anywhere;
+  color: var(--accent) !important;
+}
+.settings-card .card-heading > div {
+  min-width: 0;
+}
+.batch-progress-detail {
+  text-align: center;
+  overflow-wrap: anywhere;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+@media (max-width: 560px) {
+  .queue-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .queue-heading .process-button {
+    width: 100%;
+  }
+  .upload-zone.has-file {
+    flex-wrap: wrap;
+  }
+  .file-details {
+    flex-basis: calc(100% - 60px);
+  }
+}
+
 /* Final spacing and touch targets preserve the existing workspace layout. */
 .page-heading {
   flex-wrap: wrap;

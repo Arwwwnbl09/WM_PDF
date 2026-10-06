@@ -1,31 +1,45 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  cancelPdf,
-  pdfProgress,
-  processPdf,
-  type ProcessedPdf,
-} from "@/lib/api/pdf";
+import { cancelPdf, pdfProgress, processPdf } from "@/lib/api/pdf";
+import type { ProcessedPdf } from "@/lib/api/pdf";
 import type { WatermarkConfig } from "@/types/watermark";
 import { downloadPdf } from "./download";
 import { createProgressId } from "./progressId";
 
 export type ProcessingState =
   | { status: "idle" }
+  | { status: "queued" }
   | { status: "processing"; percentage: number }
   | { status: "success"; result: ProcessedPdf & { url: string } }
   | { status: "error"; message: string };
 
+export interface PdfJob {
+  id: string;
+  file: File;
+  displayName?: string;
+  outputFilename?: string;
+  config: WatermarkConfig;
+}
+
+export interface ProcessingRun {
+  total: number;
+  index: number;
+  filename: string;
+  percentage: number;
+}
+
 export function usePdfProcessing() {
-  const [state, setState] = useState<ProcessingState>({ status: "idle" });
+  const [states, setStates] = useState<Record<string, ProcessingState>>({});
+  const [run, setRun] = useState<ProcessingRun | null>(null);
   const request = useRef<{
     controller: AbortController;
     progressId?: string;
   } | null>(null);
   const cancellation = useRef<Promise<void>>(Promise.resolve());
-  const resultUrl = useRef<string | null>(null);
+  const resultUrls = useRef(new Map<string, string>());
   const generation = useRef(0);
-  const cleanup = useCallback(() => {
+
+  const cancelRequest = useCallback(() => {
     generation.current++;
     const active = request.current;
     active?.controller.abort();
@@ -34,96 +48,168 @@ export function usePdfProcessing() {
       cancellation.current = cancellation.current
         .then(() => cancelPdf(id))
         .catch(() => {
-          // An unavailable server is reported by the next processing request.
+          // A failed connection is reported by the next processing request.
         });
     }
     request.current = null;
-    if (resultUrl.current) URL.revokeObjectURL(resultUrl.current);
-    resultUrl.current = null;
   }, []);
-  const invalidate = useCallback(() => {
-    cleanup();
-    setState({ status: "idle" });
-  }, [cleanup]);
-  useEffect(() => cleanup, [cleanup]);
 
-  const process = useCallback(
-    async (file: File, config: WatermarkConfig) => {
-      if (request.current) return;
-      cleanup();
-      const token = generation.current;
+  const releaseResult = useCallback((id: string) => {
+    const url = resultUrls.current.get(id);
+    if (url) URL.revokeObjectURL(url);
+    resultUrls.current.delete(id);
+  }, []);
+
+  const stop = useCallback(() => {
+    cancelRequest();
+    setRun(null);
+    setStates((previous) =>
+      Object.fromEntries(
+        Object.entries(previous).map(([id, state]) => [
+          id,
+          state.status === "processing" || state.status === "queued"
+            ? { status: "idle" }
+            : state,
+        ]),
+      ),
+    );
+  }, [cancelRequest]);
+
+  const invalidate = useCallback(
+    (id?: string) => {
+      stop();
+      if (id) releaseResult(id);
+      else for (const key of resultUrls.current.keys()) releaseResult(key);
+      setStates((previous) => {
+        if (!id) return {};
+        const next = { ...previous };
+        delete next[id];
+        return next;
+      });
+    },
+    [stop, releaseResult],
+  );
+
+  useEffect(() => {
+    const urls = resultUrls.current;
+    return () => {
+      cancelRequest();
+      for (const url of urls.values()) URL.revokeObjectURL(url);
+      urls.clear();
+    };
+  }, [cancelRequest]);
+
+  const processBatch = useCallback(
+    async (inputJobs: PdfJob[]) => {
+      if (request.current || !inputJobs.length) return;
+      // Freeze each file's settings before the first upload starts.
+      const jobs = inputJobs.map((job) => ({
+        ...job,
+        config: { ...job.config },
+      }));
+      const token = ++generation.current;
       const controller = new AbortController();
       const active: { controller: AbortController; progressId?: string } = {
         controller,
       };
       request.current = active;
-      setState({ status: "processing", percentage: 0 });
-      let timer: ReturnType<typeof setInterval> | undefined;
+      for (const job of jobs) releaseResult(job.id);
+      setStates((previous) => ({
+        ...previous,
+        ...Object.fromEntries(jobs.map(({ id }) => [id, { status: "queued" }])),
+      }));
+      setRun({
+        total: jobs.length,
+        index: 1,
+        filename: jobs[0].displayName ?? jobs[0].file.name,
+        percentage: 0,
+      });
+      const current = () =>
+        generation.current === token && !controller.signal.aborted;
       try {
-        // Cancel releases the old worker before a replacement upload starts.
+        // Wait until cancellation has released the previous backend worker.
         await cancellation.current;
-        if (generation.current !== token || controller.signal.aborted) return;
-        const progressId = createProgressId();
-        active.progressId = progressId;
-        let polling = false;
-        timer = setInterval(async () => {
-          if (polling || controller.signal.aborted) return;
-          polling = true;
+        if (!current()) return;
+        for (const [index, job] of jobs.entries()) {
+          if (!current()) return;
+          let timer: ReturnType<typeof setInterval> | undefined;
+          let percentage = 0;
+          let finished = false;
+          const updateProgress = (value: number) => {
+            if (!current() || finished) return;
+            percentage = Math.max(percentage, Math.min(99, value));
+            setStates((previous) => ({
+              ...previous,
+              [job.id]: { status: "processing", percentage },
+            }));
+            setRun({
+              total: jobs.length,
+              index: index + 1,
+              filename: job.displayName ?? job.file.name,
+              percentage: Math.floor((index * 100 + percentage) / jobs.length),
+            });
+          };
+          updateProgress(0);
           try {
-            const percentage = await pdfProgress(progressId, controller.signal);
-            if (
-              percentage === undefined ||
-              generation.current !== token ||
-              controller.signal.aborted
-            )
-              return;
-            setState((previous) =>
-              previous.status === "processing"
-                ? {
-                    status: "processing",
-                    percentage: Math.max(
-                      previous.percentage,
-                      Math.min(99, percentage),
-                    ),
-                  }
-                : previous,
+            const progressId = createProgressId();
+            active.progressId = progressId;
+            let polling = false;
+            timer = setInterval(async () => {
+              if (polling || !current()) return;
+              polling = true;
+              try {
+                const value = await pdfProgress(progressId, controller.signal);
+                if (value !== undefined) updateProgress(value);
+              } finally {
+                polling = false;
+              }
+            }, 500);
+            const processed = await processPdf(
+              job.file,
+              job.config,
+              controller.signal,
+              progressId,
             );
+            if (!current()) return;
+            const result = {
+              ...processed,
+              filename: job.outputFilename ?? processed.filename,
+            };
+            const url = URL.createObjectURL(result.blob);
+            resultUrls.current.set(job.id, url);
+            setStates((previous) => ({
+              ...previous,
+              [job.id]: { status: "success", result: { ...result, url } },
+            }));
+            try {
+              downloadPdf(url, result.filename);
+            } catch {
+              // The result remains available through the manual save action.
+            }
+          } catch (error) {
+            if (!current()) return;
+            setStates((previous) => ({
+              ...previous,
+              [job.id]: {
+                status: "error",
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Gagal memproses PDF. Silakan coba lagi.",
+              },
+            }));
           } finally {
-            polling = false;
+            finished = true;
+            clearInterval(timer);
+            active.progressId = undefined;
           }
-        }, 500);
-        const result = await processPdf(
-          file,
-          config,
-          controller.signal,
-          progressId,
-        );
-        if (generation.current !== token || controller.signal.aborted) return;
-        const url = URL.createObjectURL(result.blob);
-        resultUrl.current = url;
-        setState({ status: "success", result: { ...result, url } });
-        try {
-          // Start once, after the PDF is received and validated. Browser settings
-          // decide whether to open Save As; native pickers need a fresh click.
-          downloadPdf(url, result.filename);
-        } catch {
-          // Keep the valid result available through the manual retry action.
         }
-      } catch (error) {
-        if (generation.current !== token || controller.signal.aborted) return;
-        setState({
-          status: "error",
-          message:
-            error instanceof Error
-              ? error.message
-              : "Gagal memproses PDF. Silakan coba lagi.",
-        });
       } finally {
-        clearInterval(timer);
         if (request.current === active) request.current = null;
+        if (current()) setRun(null);
       }
     },
-    [cleanup],
+    [releaseResult],
   );
-  return { state, process, invalidate };
+  return { states, run, processBatch, invalidate, stop };
 }

@@ -6,30 +6,38 @@ import { formatFileSize } from "@/lib/watermark";
 export function PdfUploader({
   file,
   onChange,
+  count = file ? 1 : 0,
+  disabled = false,
+  displayName,
+  onDuplicate,
 }: {
   file: File | null;
-  onChange: (file: File | null) => void;
+  onChange: (files: File[], append?: boolean) => void;
+  count?: number;
+  disabled?: boolean;
+  displayName?: string;
+  onDuplicate: () => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const additionalInput = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
-  function selectFile(candidate?: File) {
-    if (!candidate) return;
-    if (
-      !/\.pdf$/i.test(candidate.name) ||
-      (candidate.type && candidate.type !== "application/pdf")
-    ) {
-      setError("Format file tidak didukung. Pilih file PDF.");
-      onChange(null);
-      return;
+  function selectFiles(candidates: FileList | null, append = false) {
+    if (!candidates?.length || disabled) return;
+    const accepted: File[] = [];
+    const errors = new Set<string>();
+    for (const candidate of Array.from(candidates)) {
+      if (
+        !/\.pdf$/i.test(candidate.name) ||
+        (candidate.type && candidate.type !== "application/pdf")
+      ) {
+        errors.add("Format file tidak didukung. Pilih file PDF.");
+      } else if (candidate.size === 0) {
+        errors.add("File PDF kosong. Pilih file lain.");
+      } else accepted.push(candidate);
     }
-    if (candidate.size === 0) {
-      setError("File PDF kosong. Pilih file lain.");
-      onChange(null);
-      return;
-    }
-    setError("");
-    onChange(candidate);
+    setError([...errors].join(" "));
+    onChange(accepted, append);
   }
   return (
     <div className="uploader-wrap">
@@ -37,10 +45,25 @@ export function PdfUploader({
         ref={input}
         className="sr-only"
         type="file"
+        multiple
+        disabled={disabled}
         accept=".pdf,application/pdf"
         aria-label="Pilih file PDF"
         onChange={(event) => {
-          selectFile(event.target.files?.[0]);
+          selectFiles(event.target.files);
+          event.target.value = "";
+        }}
+      />
+      <input
+        ref={additionalInput}
+        className="sr-only"
+        type="file"
+        multiple
+        disabled={disabled}
+        accept=".pdf,application/pdf"
+        aria-label="Tambah file PDF"
+        onChange={(event) => {
+          selectFiles(event.target.files, true);
           event.target.value = "";
         }}
       />
@@ -48,7 +71,7 @@ export function PdfUploader({
         className={`upload-zone ${dragging ? "is-dragging" : ""} ${file ? "has-file" : ""}`}
         onDragOver={(event) => {
           event.preventDefault();
-          setDragging(true);
+          if (!disabled) setDragging(true);
         }}
         onDragLeave={(event) => {
           if (!event.currentTarget.contains(event.relatedTarget as Node | null))
@@ -57,10 +80,7 @@ export function PdfUploader({
         onDrop={(event) => {
           event.preventDefault();
           setDragging(false);
-          if (event.dataTransfer.files.length > 1) {
-            setError("Pilih satu file PDF.");
-            onChange(null);
-          } else selectFile(event.dataTransfer.files[0]);
+          selectFiles(event.dataTransfer.files, count > 0);
         }}
       >
         {file ? (
@@ -69,22 +89,46 @@ export function PdfUploader({
               <Icon name="file" size={22} />
             </span>
             <div className="file-details">
-              <strong title={file.name}>{file.name}</strong>
-              <span>{formatFileSize(file.size)}</span>
+              <strong title={displayName ?? file.name}>
+                {displayName ?? file.name}
+              </strong>
+              <span>
+                {count > 1 ? `${count} PDF dipilih` : formatFileSize(file.size)}
+              </span>
             </div>
             <button
               type="button"
               className="button-subtle"
+              disabled={disabled}
               onClick={() => input.current?.click()}
             >
-              Ganti file
+              {count > 1 ? "Ganti semua" : "Ganti file"}
+            </button>
+            <button
+              type="button"
+              className="button-subtle"
+              disabled={disabled}
+              onClick={() => additionalInput.current?.click()}
+            >
+              Tambah PDF
+            </button>
+            <button
+              type="button"
+              className="button-subtle"
+              disabled={disabled}
+              onClick={onDuplicate}
+              title="Tambahkan salinan PDF ini ke daftar"
+            >
+              Buat salinan
             </button>
             <button
               type="button"
               className="icon-button"
-              aria-label="Hapus file PDF"
+              aria-label={count > 1 ? "Hapus semua PDF" : "Hapus file PDF"}
+              title={count > 1 ? "Hapus semua PDF" : "Hapus file PDF"}
+              disabled={disabled}
               onClick={() => {
-                onChange(null);
+                onChange([]);
                 setError("");
               }}
             >
@@ -95,6 +139,7 @@ export function PdfUploader({
           <button
             type="button"
             className="upload-trigger"
+            disabled={disabled}
             onClick={() => input.current?.click()}
           >
             <span className="upload-icon">
@@ -104,7 +149,7 @@ export function PdfUploader({
             <span>
               atau <b>pilih file</b> dari perangkat
             </span>
-            <small>Format PDF</small>
+            <small>Format PDF · Bisa pilih beberapa file sekaligus</small>
           </button>
         )}
       </div>
