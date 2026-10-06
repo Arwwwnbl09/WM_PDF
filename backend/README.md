@@ -107,7 +107,7 @@ Dari folder proyek:
 
 ```text
 docker build -t secure-pdf-backend ./backend
-docker run --rm -p 8000:8000 -e FRONTEND_ORIGINS=https://wm-pdf.vercel.app secure-pdf-backend
+docker run --rm -p 8000:8000 -e FRONTEND_ORIGINS=https://wmpdf.vercel.app secure-pdf-backend
 ```
 
 Container menyertakan Python 3.13, font Liberation/DejaVu, dan dependensi aplikasi yang mengikuti versi `requirements.lock.txt`. Aplikasi berjalan sebagai pengguna non-root dan memakai direktori sementara yang dapat ditulis. Port mengikuti variabel `PORT`, dengan nilai bawaan `8000`. Pemeriksaan kesehatan tersedia di `/health`.

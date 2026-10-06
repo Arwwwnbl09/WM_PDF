@@ -120,15 +120,19 @@ Deployment yang memakai Root Directory `frontend` hanya menjalankan Next.js. Bac
 
 Salah satu cara memasang backend adalah melalui [Render](https://render.com/docs/docker):
 
+Konfigurasi backend sudah tersedia. Buka [Deploy backend ke Render](https://render.com/deploy?repo=https://github.com/Arwwwnbl09/WM_PDF) untuk meninjau dan membuat layanan dari `render.yaml`, lalu ikuti langkah penyambungan di bawah.
+
 1. Di Render, pilih **New → Blueprint**, lalu hubungkan repo `Arwwwnbl09/WM_PDF`. File `render.yaml` menyiapkan layanan Docker backend, font, satu instance, dan pemeriksaan `/health`.
 2. Tinjau paket layanan sebelum membuatnya. Blueprint memakai paket gratis untuk uji coba file kecil. Layanan gratis dapat berhenti saat tidak digunakan dan RAM-nya terbatas; gunakan sumber daya yang sesuai untuk dokumen kantor banyak halaman. Informasi paket tersedia di [panduan Render](https://render.com/docs/free).
 3. Tunggu backend aktif. Buka `https://alamat-backend/health` dan pastikan responsnya `{"status":"ok"}`.
 4. Di Vercel, buat atau pilih proyek frontend. Pada **Settings → Build and Deployment**, isi **Root Directory `frontend`** dan **Framework Preset `Next.js`**. Pengaturan install dan build terdapat di `frontend/vercel.json`.
 5. Pada **Settings → Environment Variables**, isi `NEXT_PUBLIC_API_URL` dengan `https://alamat-backend`, tanpa tambahan `/api/pdf`, pada lingkungan **Production**.
-6. Di backend, isi `FRONTEND_ORIGINS=https://wm-pdf.vercel.app`. Blueprint sudah memakai alamat ini. Sesuaikan nilai tersebut jika domain frontend berubah. Tambahkan domain lain yang dipakai, dipisahkan koma; jangan menggunakan wildcard.
+6. Di backend, isi `FRONTEND_ORIGINS=https://wmpdf.vercel.app`. Blueprint mengizinkan domain ini dan domain lama `https://wm-pdf.vercel.app`. Sesuaikan nilai tersebut jika domain frontend berubah. Tambahkan domain lain yang dipakai, dipisahkan koma; jangan menggunakan wildcard.
 7. Redeploy frontend Vercel agar alamat backend masuk ke build baru. Uji satu PDF kecil, lalu dokumen dengan ukuran dan jumlah halaman yang biasa dipakai di kantor. Uji juga pembatalan dan proses ulang.
 
 Dengan konfigurasi ini, unggahan, progres, pembatalan, dan hasil PDF dikirim langsung antara browser dan backend. Proxy Vercel tidak dipakai untuk pemrosesan PDF karena [batas waktu proxy eksternal 120 detik](https://vercel.com/docs/limits#proxied-request-timeout). Menempatkan pemroses PDF sebagai Vercel Function juga memerlukan perubahan arsitektur karena [batas badan permintaan dan respons 4,5 MB](https://vercel.com/docs/functions/limitations#request-body-size).
+
+Pesan batas hosting 4,5 MB berarti permintaan atau hasil ditolak oleh Vercel. Pilihan kualitas PDF baru diterapkan setelah unggahan diterima, sehingga kompresi tersebut tidak mengatasi batas unggahan. Pesan kegagalan layanan hosting memerlukan pemeriksaan `/health` dan Runtime Logs backend. Batas aplikasi 50 MiB berlaku ketika permintaan sudah mencapai FastAPI.
 
 Backend juga bisa dijalankan di Railway atau server kantor melalui [Dockerfile backend](backend/Dockerfile); sesuaikan alamat HTTPS dan origin frontend. Jalankan satu instance dan satu worker Uvicorn agar progres serta pembatalan menuju proses yang sama.
 

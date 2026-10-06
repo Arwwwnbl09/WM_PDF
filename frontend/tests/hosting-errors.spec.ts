@@ -6,6 +6,38 @@ const busyMessage =
 
 for (const response of [
   {
+    name: "Vercel payload size limit in response body",
+    status: 413,
+    contentType: "text/plain",
+    body: "Request Entity Too Large\nFUNCTION_PAYLOAD_TOO_LARGE\nsin1::test-request",
+    message:
+      "Hosting Vercel membatasi unggahan dan hasil PDF hingga 4,5 MB. Hubungi pengelola aplikasi.",
+  },
+  {
+    name: "Vercel payload size limit in response header",
+    status: 413,
+    contentType: "text/plain",
+    headers: { "x-vercel-error": "FUNCTION_PAYLOAD_TOO_LARGE" },
+    body: "Request Entity Too Large",
+    message:
+      "Hosting Vercel membatasi unggahan dan hasil PDF hingga 4,5 MB. Hubungi pengelola aplikasi.",
+  },
+  {
+    name: "FastAPI upload limit keeps the backend detail",
+    status: 413,
+    contentType: "application/json",
+    body: JSON.stringify({ detail: "Ukuran PDF melebihi batas 50 MiB." }),
+    message: "Ukuran PDF melebihi batas 50 MiB.",
+  },
+  {
+    name: "Vercel backend invocation failure",
+    status: 500,
+    contentType: "text/plain",
+    body: "A server error has occurred\nFUNCTION_INVOCATION_FAILED\nsin1::test-request",
+    message:
+      "Layanan pemrosesan PDF belum dapat berjalan di hosting. Hubungi pengelola aplikasi.",
+  },
+  {
     name: "private backend address rejected by hosting provider",
     status: 404,
     contentType: "text/plain; charset=utf-8",
@@ -61,6 +93,7 @@ for (const response of [
         status: response.status,
         contentType: response.contentType,
         body: response.body,
+        headers: response.headers,
       });
     });
     await page.goto("/");
@@ -78,7 +111,7 @@ for (const response of [
     const error = page.locator(".processing-result[role=alert]");
     await expect(error.locator("p")).toHaveText(response.message);
     await expect(error).not.toContainText(
-      /DNS_HOSTNAME_RESOLVED_PRIVATE|PRIVATE_INTERNAL_PATH|iad1::|FUNCTION_INVOCATION_TIMEOUT|<html>/,
+      /DNS_HOSTNAME_RESOLVED_PRIVATE|PRIVATE_INTERNAL_PATH|iad1::|sin1::|FUNCTION_(INVOCATION_TIMEOUT|INVOCATION_FAILED|PAYLOAD_TOO_LARGE)|<html>/,
     );
     await expect(process).toBeEnabled();
     await expect(

@@ -12,4 +12,4 @@ services:
     healthCheckPath: /health
     envVars:
       - key: FRONTEND_ORIGINS
-        value: https://wm-pdf.vercel.app
+        value: https://wmpdf.vercel.app,https://wm-pdf.vercel.app

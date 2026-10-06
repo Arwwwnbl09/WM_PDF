@@ -9,9 +9,24 @@ export interface ProcessedPdf {
 }
 const fallback = "Gagal memproses PDF. Silakan coba lagi.";
 
-function nonJsonProcessingError(status: number, body: string): string {
+function nonJsonProcessingError(
+  status: number,
+  body: string,
+  platformError: string | null,
+): string {
+  if (
+    platformError === "FUNCTION_PAYLOAD_TOO_LARGE" ||
+    body.includes("FUNCTION_PAYLOAD_TOO_LARGE")
+  )
+    return "Hosting Vercel membatasi unggahan dan hasil PDF hingga 4,5 MB. Hubungi pengelola aplikasi.";
+  if (
+    platformError === "FUNCTION_INVOCATION_FAILED" ||
+    body.includes("FUNCTION_INVOCATION_FAILED")
+  )
+    return "Layanan pemrosesan PDF belum dapat berjalan di hosting. Hubungi pengelola aplikasi.";
   if (body.includes("DNS_HOSTNAME_RESOLVED_PRIVATE"))
     return "Server pemrosesan PDF belum tersambung. Hubungi pengelola aplikasi.";
+  if (status === 413) return "Ukuran PDF melebihi batas yang diizinkan.";
   if (status === 404)
     return "Layanan pemrosesan PDF tidak tersedia. Hubungi pengelola aplikasi.";
   if (status === 502)
@@ -114,12 +129,15 @@ export async function processPdf(
     throw new Error("Server pemrosesan PDF tidak dapat dihubungi. Coba lagi.");
   }
   if (!response.ok) {
-    if (response.status === 413)
-      throw new Error("Ukuran PDF melebihi batas yang diizinkan.");
     let message = fallback;
     let responseText = "";
     try {
       responseText = await response.text();
+      message = nonJsonProcessingError(
+        response.status,
+        responseText,
+        response.headers.get("x-vercel-error"),
+      );
       const payload: unknown = JSON.parse(responseText);
       if (
         typeof payload === "object" &&
@@ -131,7 +149,11 @@ export async function processPdf(
         message = payload.detail;
     } catch (error) {
       if (signal?.aborted) throw error;
-      message = nonJsonProcessingError(response.status, responseText);
+      message = nonJsonProcessingError(
+        response.status,
+        responseText,
+        response.headers.get("x-vercel-error"),
+      );
     }
     if (/password|kata sandi/i.test(message))
       message = "PDF dilindungi kata sandi dan belum dapat diproses.";
